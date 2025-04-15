@@ -1,10 +1,11 @@
-import { EventTypeSchemaIn, Webhooks } from "svix";
-import User from "../models/User";
+import { Webhook } from "svix";
+import { EventTypeSchemaIn } from "svix";
+import User from "../models/User.js";
 import dotenv from "dotenv"
 
 // API Controller Function to Manage Clerk User with database
 
-const clerkWebhooks = async( req, res ) => {
+export const clerkWebhooks = async( req, res ) => {
     try {
         const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET)
 
@@ -24,7 +25,7 @@ const clerkWebhooks = async( req, res ) => {
                     name : data.first_name + " " + data.last_name,
                     imageUrl : data.imageUrl
                 }
-                await User.create(userData)
+                await User.create(UserData)
                 res.JSON({})
                 break;
             }
