@@ -1,20 +1,32 @@
 import React, { useContext, useEffect, useState } from 'react'
 import { AppContext } from '../../context/AppContext'
 import Loading from '../../components/students/Loading'
+import axios from 'axios'
+import { toast } from 'react-toastify'
 
 const MyCourses = () => {
 
-  const { currency, allCourses } = useContext(AppContext)
+  const { currency, backendUrl, isEducator, getToken } = useContext(AppContext)
 
   const [ courses, setCourses ] = useState(null)
 
   const fetchEducatorCourses = async () => {
-    setCourses(allCourses)
+    try {
+      const token = await getToken()
+      const { data } = await axios.get(backendUrl + '/api/educator/courses',
+        {headers: { Authorization: `Bearer ${token}`}})
+
+        data.success && setCourses(data.courses)
+    } catch (error) {
+      toast.error(error.message)
+    }
   }
 
   useEffect(() => {
+    if(isEducator){
       fetchEducatorCourses()
-  }, [])
+    }
+  }, [isEducator])
 
 
   return courses ? (
@@ -33,18 +45,21 @@ const MyCourses = () => {
             </thead>
 
             <tbody className="text-sm text-gray-500">
-              {courses.map((course) => (
-                <tr key={courses._id} className='border-b border-gray-500/20'>
+              {Array.isArray(courses) && courses.map((course) => (
+                <tr key={course._id || Math.random()} className='border-b border-gray-500/20'>
                   <td className='md:px-4 pl-2 md:pl-4 py-3 flex items-center space-x-3 truncate'>
-                    <img src={course.courseThumbnail} alt="Course Image" className='w-16' />
-                    <span className='truncate hidden md:block'>{course.courseTitle}</span>
+                    <img src={course?.courseThumbnail || ''} alt="Course" className='w-16' />
+                    <span className='truncate hidden md:block'>{course?.courseTitle || 'Untitled'}</span>
                   </td>
-                  <td className='px-4 py-3'>{currency} {Math.floor(course.enrolledStudents.length * (course.coursePrice - course.discount * course.coursePrice / 100))}</td>
-                  <td className='px-4 py-3'>{course.enrolledStudents.length}</td>
-                  <td className='px-4 py-3'>{new Date(course.createdAt).toLocaleDateString()}</td>
+                  <td className='px-4 py-3'>
+                    {currency} {Math.floor(((course?.enrolledStudents?.length || 0) * (course?.coursePrice || 0 - (course?.discount || 0) * (course?.coursePrice || 0) / 100)))}
+                  </td>
+                  <td className='px-4 py-3'>{course?.enrolledStudents?.length || 0}</td>
+                  <td className='px-4 py-3'>{course?.createdAt ? new Date(course.createdAt).toLocaleDateString() : 'N/A'}</td>
                 </tr>
               ))}
             </tbody>
+
           </table>
         </div>
       </div>

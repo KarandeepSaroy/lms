@@ -3,7 +3,7 @@ import Course from "../models/Course.js"
 import { Purchase } from "../models/Purchase.js"
 import User from "../models/User.js"
 import { CourseProgress } from "../models/CourseProgress.js"
-import Course from "../models/Course.js"
+
 
 
 export const getUserData = async (req, res)=>{
@@ -42,7 +42,8 @@ export const userEnrolledCourses = async ( req, res )=>{
 export const purchaseCourse = async (req, res)=>{
     try {
         const { courseId } = req.body
-        const { origin } = req.headers
+        // const { origin } = req.headers
+        const origin = req.get("origin") || "https://localhost:3000"
         const userId = req.auth.userId
         const userData = await User.findById(userId)
         const courseData = await Course.findById(courseId)
@@ -54,7 +55,7 @@ export const purchaseCourse = async (req, res)=>{
         const purchaseData = {
             courseId: courseData._id,
             userId,
-            amount: (courseData.coursePrice - courseData.discount * courseData.coursePrice / 100).toFixed(2),
+            amount: ((courseData.coursePrice - courseData.discount * courseData.coursePrice / 100).toFixed(2)),
         }
         
         const newPurchase = await Purchase.create(purchaseData)
@@ -78,9 +79,10 @@ export const purchaseCourse = async (req, res)=>{
             quantity: 1
         }]
 
-        const session = await stripeInstance.checkout.session.create({
-            success_url: `$(origin)/loading/my-enrollments`,
-            cancle_url: `$(origin)/`,
+        const session = await stripeInstance.checkout.sessions.create({
+            success_url: `${origin}/loading/my-enrollments`,
+            cancel_url: `${origin}/`,
+
             line_items: line_items,
             mode: 'payment',
             metadata: {
@@ -98,7 +100,7 @@ export const purchaseCourse = async (req, res)=>{
 
 // Update User Course Progress
 
-const updateUserCourseProgress = async()=>{
+export const updateUserCourseProgress = async(req, res)=>{
     try{
         const userId = req.auth.userId
         const { courseId, lectureId } = req.body
@@ -131,9 +133,19 @@ const updateUserCourseProgress = async()=>{
 
 // get User Course Progress
 
-export const getUserCourseProgress = async(req, res)=>{
-    
-}
+
+export const getUserCourseProgress = async (req, res) => {
+  try {
+    const userId = req.auth.userId;
+    const { courseId } = req.body;
+
+    const progressData = await CourseProgress.findOne({ userId, courseId });
+    res.json({ success: true, progressData });
+  } catch (error) {
+    res.json({ success: false, message: error.message });
+  }
+};
+
 
 // Add User Ratings to Course
 
